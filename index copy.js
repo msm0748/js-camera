@@ -1,4 +1,5 @@
 const video = document.querySelector('video');
+const changeBtn = document.querySelector('.change-btn');
 let constraints = {
   audio: false,
   video: {
@@ -19,3 +20,16 @@ navigator.mediaDevices
     };
   })
   .catch(handleError);
+
+changeBtn.addEventListener('click', () => {
+  // Toggle facing mode between 'environment' and 'user'
+  const currentFacingMode = constraints.video.facingMode.exact;
+  constraints.video.facingMode = {
+    exact: currentFacingMode === 'environment' ? 'user' : 'environment',
+  };
+
+  console.log('Updated constraints:', constraints);
+
+  // Restart stream with new facing mode
+  startStream(constraints);
+});
