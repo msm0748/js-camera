@@ -5,7 +5,7 @@ const constraints = {
   video: {
     width: { min: 1024, ideal: 1280, max: 1920 },
     height: { min: 576, ideal: 720, max: 1080 },
-    facingMode: { ideal: 'environment' }, // Start with the environment camera
+    facingMode: { exact: 'environment' }, // Start with the environment camera
   },
 };
 
@@ -25,7 +25,7 @@ navigator.mediaDevices
 changeBtn.addEventListener('click', () => {
   const { facingMode } = constraints.video;
   constraints.video.facingMode =
-    facingMode.ideal === 'environment' ? 'user' : 'environment';
+    facingMode.exact === 'environment' ? 'user' : 'environment';
   navigator.mediaDevices
     .getUserMedia(constraints)
     .then((stream) => {
