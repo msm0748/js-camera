@@ -1,27 +1,9 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>Document</title>
-    <script src="index.js" defer></script>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <video id="video"></video>
-    <button class="change-btn">체인지</button>
-  </body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>웹캠 전/후면 카메라 전환</title>
+    <title>웹캠 전/후면 카메라 전환 및 플래시</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -48,27 +30,55 @@
         border-radius: 5px;
         cursor: pointer;
         transition: background-color 0.3s;
+        margin: 5px;
       }
       button:hover {
         background-color: #45a049;
+      }
+      #flashButton {
+        background-color: #f39c12;
+      }
+      #flashButton:hover {
+        background-color: #e67e22;
       }
     </style>
   </head>
   <body>
     <video id="webcam" autoplay playsinline></video>
-    <button id="switchCamera">카메라 전환</button>
+    <div>
+      <button id="switchCamera">카메라 전환</button>
+      <button id="flashButton">플래시 켜기/끄기</button>
+    </div>
 
     <script>
       const video = document.getElementById('webcam');
       const switchButton = document.getElementById('switchCamera');
-      let currentFacingMode = 'user';
+      const flashButton = document.getElementById('flashButton');
+      let currentFacingMode = 'environment';
+      let currentStream = null;
+      let flashOn = false;
 
       async function setupCamera() {
         try {
+          if (currentStream) {
+            currentStream.getTracks().forEach((track) => track.stop());
+          }
+
           const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: currentFacingMode },
+            video: {
+              facingMode: currentFacingMode,
+              advanced: [{ torch: flashOn }],
+            },
           });
           video.srcObject = stream;
+          currentStream = stream;
+
+          // 플래시 지원 여부 확인
+          const track = stream.getVideoTracks()[0];
+          const capabilities = track.getCapabilities();
+          if (!capabilities.torch) {
+            flashButton.style.display = 'none';
+          }
         } catch (error) {
           console.error('카메라 접근 오류:', error);
           alert('카메라 접근에 실패했습니다. 카메라 권한을 확인해주세요.');
@@ -76,17 +86,31 @@
       }
 
       switchButton.addEventListener('click', async () => {
-        // 현재 스트림 중지
-        const currentStream = video.srcObject;
-        const tracks = currentStream.getTracks();
-        tracks.forEach((track) => track.stop());
-
-        // 카메라 모드 전환
         currentFacingMode =
           currentFacingMode === 'user' ? 'environment' : 'user';
-
-        // 새 스트림으로 카메라 설정
         await setupCamera();
+      });
+
+      flashButton.addEventListener('click', async () => {
+        if (!currentStream) return;
+
+        const track = currentStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+
+        if (capabilities.torch) {
+          flashOn = !flashOn;
+          try {
+            await track.applyConstraints({
+              advanced: [{ torch: flashOn }],
+            });
+            flashButton.textContent = flashOn ? '플래시 끄기' : '플래시 켜기';
+          } catch (error) {
+            console.error('플래시 제어 오류:', error);
+            alert('플래시 제어에 실패했습니다.');
+          }
+        } else {
+          alert('이 기기는 플래시 기능을 지원하지 않습니다.');
+        }
       });
 
       // 초기 카메라 설정
